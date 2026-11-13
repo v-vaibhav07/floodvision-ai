@@ -55,27 +55,34 @@ app = FastAPI(
 
 
 # --------------------------------------------------
-# 3. CORS CONFIGURATION
+# 3. CORS CONFIGURATION - VERCEL + LOCALHOST
 # --------------------------------------------------
+
+FRONTEND_URL = os.getenv(
+    "FRONTEND_URL",
+    "https://floodvision-ai-rho.vercel.app"
+)
 
 allowed_origins = [
     "http://localhost:5173",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    "https://floodvision-ai-rho.vercel.app"
 ]
 
-frontend_urls = os.getenv("FRONTEND_URL", "")
-
-for url in frontend_urls.split(","):
+# Supports one or more frontend URLs separated by commas.
+for url in FRONTEND_URL.split(","):
     url = url.strip().rstrip("/")
 
     if url and url not in allowed_origins:
         allowed_origins.append(url)
 
+logger.info("Allowed CORS origins: %s", allowed_origins)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=[
         "X-Flood-Percentage",
@@ -89,7 +96,7 @@ app.add_middleware(
 # --------------------------------------------------
 
 # Compatibility with FrozenKMeans exported from Colab.
-# Never load untrusted joblib files.
+# Only load trusted joblib model files.
 sys.modules["__main__"].FrozenKMeans = FrozenKMeans
 
 if not MODEL_PATH.exists():
